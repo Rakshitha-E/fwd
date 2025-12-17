@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Investmate Login</title>
+
+    <!-- ✅ Correct CSS path -->
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Investmate</h1>
+
+      <div class="card">
+        <h2>Register</h2>
+        <input type="text" id="regName" placeholder="Name" />
+        <input type="email" id="regEmail" placeholder="Email" />
+        <input type="password" id="regPassword" placeholder="Password" />
+        <button id="regBtn">Register</button>
+        <p id="regMsg" class="msg"></p>
+      </div>
+
+      <div class="card">
+        <h2>Login</h2>
+        <input type="email" id="loginEmail" placeholder="Email" />
+        <input type="password" id="loginPassword" placeholder="Password" />
+        <button id="loginBtn">Login</button>
+        <p id="loginMsg" class="msg"></p>
+      </div>
+
+      <div class="card">
+        <h2>Profile</h2>
+        <button id="fetchProfile">Get Profile</button>
+        <pre id="profile"></pre>
+      </div>
+    </div>
+
+    <!-- ✅ Important: Use module type so imports work -->
+    <script type="module" src="./login.js"></script>
+  </body>
+</html>

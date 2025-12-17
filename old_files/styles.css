@@ -1,0 +1,64 @@
+:root {
+  --bg: #f5f7fb;
+  --card: #fff;
+  --accent: #3498db;
+}
+
+body {
+  font-family: Inter, Roboto, sans-serif;
+  background: linear-gradient(135deg, #f0f3f7, #d9e2ec);
+  margin: 0;
+  padding: 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.container {
+  max-width: 980px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.card {
+  background: var(--card);
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(44, 62, 80, 0.06);
+}
+
+input {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: 1px solid #d1d9e6;
+}
+
+button {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.msg {
+  color: #b03;
+}
+
+pre {
+  background: #f6f8fa;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+@media (max-width: 800px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
