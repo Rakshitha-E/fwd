@@ -133,10 +133,18 @@ router.get("/price", async (req, res) => {
 
     const upperSymbol = symbol.toUpperCase();
 
-    // Use Yahoo Finance API (no API key required)
+    // Determine if it's an Indian stock
+    const stockData = STOCKS.find(s => s.symbol === upperSymbol);
+    const isIndianStock = stockData && stockData.exchange === 'NSE';
+
+    // Use appropriate Yahoo Finance symbol
+    let yahooSymbol = upperSymbol;
+    if (isIndianStock) {
+      yahooSymbol = `${upperSymbol}.NS`; // Add .NS for NSE
+    }
+
+    // Try Yahoo Finance API (no API key required)
     try {
-      // Yahoo Finance quote endpoint
-      const yahooSymbol = `${upperSymbol}.NS`; // Add .NS for NSE
       const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`, {
         params: {
           period1: Math.floor(Date.now() / 1000) - 86400, // 24 hours ago
@@ -147,7 +155,8 @@ router.get("/price", async (req, res) => {
         },
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        },
+        timeout: 10000
       });
 
       const chart = response.data.chart;
@@ -163,45 +172,54 @@ router.get("/price", async (req, res) => {
         }
       }
     } catch (yahooErr) {
-      console.log("Yahoo Finance failed:", yahooErr.message);
+      console.log(`Yahoo Finance chart failed for ${yahooSymbol}:`, yahooErr.message);
     }
 
-    // Fallback: Try alternative Yahoo Finance endpoint
+    // Fallback: Try Yahoo Finance quoteSummary endpoint
     try {
-      const response = await axios.get(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${upperSymbol}.NS`, {
+      const response = await axios.get(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${yahooSymbol}`, {
         params: {
           modules: 'price'
         },
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        },
+        timeout: 10000
       });
 
-      const priceData = response.data.quoteSummary.result[0].price;
-      if (priceData && priceData.regularMarketPrice) {
+      const result = response.data.quoteSummary.result;
+      if (result && result[0] && result[0].price && result[0].price.regularMarketPrice) {
+        const price = result[0].price.regularMarketPrice.raw;
         return res.json({
           symbol: upperSymbol,
-          price: parseFloat(priceData.regularMarketPrice.raw.toFixed(2))
+          price: parseFloat(price.toFixed(2))
         });
       }
-    } catch (altYahooErr) {
-      console.log("Alternative Yahoo Finance failed:", altYahooErr.message);
+    } catch (quoteErr) {
+      console.log(`Yahoo Finance quote failed for ${yahooSymbol}:`, quoteErr.message);
     }
 
     // Final fallback: Mock prices for demo
     const mockPrices = {
-      'TCS': 3450.50,
-      'INFY': 1450.75,
-      'HDFCBANK': 1650.25,
-      'ICICIBANK': 950.80,
-      'RELIANCE': 2850.90,
-      'BAJFINANCE': 7200.00,
-      'HINDUNILVR': 2450.60,
-      'ITC': 430.25,
-      'KOTAKBANK': 1850.90,
-      'LT': 3650.75,
-      'MARUTI': 12500.50,
-      'WIPRO': 450.80
+      // Indian Stocks
+      'TCS': 3450.50, 'INFY': 1450.75, 'HDFCBANK': 1650.25, 'ICICIBANK': 950.80,
+      'RELIANCE': 2850.90, 'BAJFINANCE': 7200.00, 'HINDUNILVR': 2450.60, 'ITC': 430.25,
+      'KOTAKBANK': 1850.90, 'LT': 3650.75, 'MARUTI': 12500.50, 'WIPRO': 450.80,
+      'BHARTIARTL': 1450.25, 'AXISBANK': 1150.90, 'ADANIPORTS': 1450.75,
+
+      // International Stocks (US Markets)
+      'AAPL': 175.25, 'MSFT': 335.50, 'GOOGL': 140.80, 'AMZN': 145.30,
+      'TSLA': 248.50, 'META': 485.75, 'NVDA': 875.25, 'NFLX': 485.90,
+      'ADBE': 485.25, 'CRM': 325.75, 'INTC': 21.50, 'AMD': 165.90,
+      'PYPL': 58.25, 'UBER': 65.80, 'SPOT': 385.50, 'ZOOM': 68.90,
+      'SHOP': 75.25, 'SQ': 65.40, 'COIN': 275.80, 'PLTR': 21.50,
+      'RIVN': 16.80, 'LCID': 3.25, 'NIO': 5.90, 'XPEV': 8.75,
+      'BABA': 88.50, 'JD': 27.80, 'BIDU': 98.25, 'TCEHY': 42.90,
+      'NVO': 125.75, 'ASML': 875.50, 'SAP': 185.25, 'SONY': 85.90,
+      'TM': 195.50, 'HMC': 32.75, 'SBUX': 95.25, 'MCD': 295.80,
+      'KO': 58.90, 'PEP': 175.25, 'WMT': 175.50, 'COST': 850.25,
+      'HD': 375.90, 'LOW': 235.75, 'JPM': 195.25, 'BAC': 37.50,
+      'WFC': 55.80, 'GS': 415.25, 'MS': 95.75, 'V': 275.50
     };
 
     const mockPrice = mockPrices[upperSymbol];
@@ -209,7 +227,7 @@ router.get("/price", async (req, res) => {
       return res.json({ symbol: upperSymbol, price: mockPrice });
     }
 
-    res.status(404).json({ error: "Price not found" });
+    res.status(404).json({ error: `Price not found for symbol: ${upperSymbol}` });
   } catch (err) {
     console.error("Price error:", err.message);
     res.status(500).json({ error: "Failed to fetch stock price" });
@@ -217,10 +235,10 @@ router.get("/price", async (req, res) => {
 });
 
 // GET historical stock data for graphs
-// Example: GET /history/TCS
-router.get("/history/:symbol", async (req, res) => {
+// Example: GET /history?symbol=TCS
+router.get("/history", async (req, res) => {
   try {
-    const { symbol } = req.params;
+    const { symbol } = req.query;
 
     if (!symbol) {
       return res.status(400).json({ error: "Symbol is required" });
@@ -228,48 +246,73 @@ router.get("/history/:symbol", async (req, res) => {
 
     const upperSymbol = symbol.toUpperCase();
 
+    // Determine if it's an Indian stock
+    const stockData = STOCKS.find(s => s.symbol === upperSymbol);
+    const isIndianStock = stockData && stockData.exchange === 'NSE';
+
+    // Use appropriate Yahoo Finance symbol
+    let yahooSymbol = upperSymbol;
+    if (isIndianStock) {
+      yahooSymbol = `${upperSymbol}.NS`; // Add .NS for NSE
+    }
+
     // Use Yahoo Finance API for historical data (last 30 days)
-    const yahooSymbol = `${upperSymbol}.NS`; // Add .NS for NSE
     const endDate = Math.floor(Date.now() / 1000);
     const startDate = endDate - (30 * 24 * 60 * 60); // 30 days ago
 
-    const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`, {
-      params: {
-        period1: startDate,
-        period2: endDate,
-        interval: '1d',
-        includePrePost: false,
-        events: 'div,splits'
-      },
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    try {
+      const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`, {
+        params: {
+          period1: startDate,
+          period2: endDate,
+          interval: '1d',
+          includePrePost: false,
+          events: 'div,splits'
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        timeout: 15000
+      });
+
+      const chart = response.data.chart;
+      if (chart.result && chart.result[0]) {
+        const result = chart.result[0];
+        const timestamps = result.timestamp;
+        const quotes = result.indicators.quote[0];
+
+        if (timestamps && quotes && quotes.close) {
+          const historicalData = timestamps.map((timestamp, index) => ({
+            date: new Date(timestamp * 1000).toISOString().split('T')[0], // YYYY-MM-DD
+            open: quotes.open ? parseFloat(quotes.open[index]?.toFixed(2)) : null,
+            high: quotes.high ? parseFloat(quotes.high[index]?.toFixed(2)) : null,
+            low: quotes.low ? parseFloat(quotes.low[index]?.toFixed(2)) : null,
+            close: quotes.close ? parseFloat(quotes.close[index]?.toFixed(2)) : null,
+            volume: quotes.volume ? quotes.volume[index] : null
+          })).filter(data => data.close !== null); // Filter out null closes
+
+          return res.json({
+            symbol: upperSymbol,
+            data: historicalData
+          });
+        }
       }
-    });
-
-    const chart = response.data.chart;
-    if (chart.result && chart.result[0]) {
-      const result = chart.result[0];
-      const timestamps = result.timestamp;
-      const quotes = result.indicators.quote[0];
-
-      if (timestamps && quotes && quotes.close) {
-        const historicalData = timestamps.map((timestamp, index) => ({
-          date: new Date(timestamp * 1000).toISOString().split('T')[0], // YYYY-MM-DD
-          open: quotes.open ? parseFloat(quotes.open[index]?.toFixed(2)) : null,
-          high: quotes.high ? parseFloat(quotes.high[index]?.toFixed(2)) : null,
-          low: quotes.low ? parseFloat(quotes.low[index]?.toFixed(2)) : null,
-          close: quotes.close ? parseFloat(quotes.close[index]?.toFixed(2)) : null,
-          volume: quotes.volume ? quotes.volume[index] : null
-        })).filter(data => data.close !== null); // Filter out null closes
-
-        return res.json({
-          symbol: upperSymbol,
-          data: historicalData
-        });
-      }
+    } catch (yahooErr) {
+      console.log(`Yahoo Finance history failed for ${yahooSymbol}:`, yahooErr.message);
     }
 
     // Fallback: Mock historical data for demo
+    const mockPrices = {
+      // Indian Stocks
+      'TCS': 3450.50, 'INFY': 1450.75, 'HDFCBANK': 1650.25, 'ICICIBANK': 950.80,
+      'RELIANCE': 2850.90, 'BAJFINANCE': 7200.00, 'HINDUNILVR': 2450.60, 'ITC': 430.25,
+      'KOTAKBANK': 1850.90, 'LT': 3650.75, 'MARUTI': 12500.50, 'WIPRO': 450.80,
+
+      // International Stocks
+      'AAPL': 175.25, 'MSFT': 335.50, 'GOOGL': 140.80, 'AMZN': 145.30,
+      'TSLA': 248.50, 'META': 485.75, 'NVDA': 875.25, 'NFLX': 485.90
+    };
+
     const mockData = [];
     const basePrice = mockPrices[upperSymbol] || 1000;
     let currentPrice = basePrice;

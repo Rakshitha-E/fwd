@@ -38,6 +38,12 @@ export default function Navbar() {
             Home
           </Link>
           <Link
+            to="/portfolio"
+            className="hover:text-blue-600 transition-colors font-medium"
+          >
+            Portfolio
+          </Link>
+          <Link
             to="/youtube"
             className="hover:text-blue-600 transition-colors font-medium"
           >

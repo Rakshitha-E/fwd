@@ -18,6 +18,7 @@ export default function Login() {
       });
 
       if (res.data.success) {
+        localStorage.setItem('token', res.data.token);
         setMessage("✅ Login successful!");
         setTimeout(() => navigate("/home"), 1000);
       } else {
