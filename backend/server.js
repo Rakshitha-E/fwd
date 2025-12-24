@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 import authRoutes from "./routes/authRoutes.js";
+import portfolioRoutes from "./routes/portfolio.js";
 import stockRoutes from "./routes/stock.js";
 
 dotenv.config();
@@ -21,7 +22,8 @@ mongoose
 
 // Routes
 app.use("/api", authRoutes);
-app.use("/api/stock", stockRoutes);
+app.use("/api/portfolio", portfolioRoutes);
+app.use("/", stockRoutes);
 
 app.get("/", (req, res) => {
   res.send("Server is running...");

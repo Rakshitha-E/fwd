@@ -5,6 +5,7 @@ import cors from "cors";
 
 import authRoutes from "./routes/authRoutes.js";
 import stockRoutes from "./routes/stock.js";
+import portfolioRoutes from "./routes/portfolio.js";
 
 dotenv.config();
 
@@ -22,7 +23,8 @@ mongoose
 
 // Routes
 app.use("/api", authRoutes);
-app.use("/api/stock", stockRoutes);
+app.use("/api", portfolioRoutes);
+app.use("/", stockRoutes);
 
 // Test root route
 app.get("/", (req, res) => {
