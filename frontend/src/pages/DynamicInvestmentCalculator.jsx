@@ -1,96 +1,151 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import "./DynamicInvestmentCalculator.css";
 
-const StockCalculator = () => {
-  const [symbol, setSymbol] = useState("");
+function DynamicInvestmentCalculator() {
   const [amount, setAmount] = useState("");
-  const [price, setPrice] = useState(null);
+  const [stockQuery, setStockQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState("dark");
 
-  // Fetch stock price from backend
-  const fetchStockPrice = async (symbol) => {
+  // 🌗 Theme handling
+  useEffect(() => {
+    if (theme === "light") {
+      document.body.classList.add("light-mode");
+    } else {
+      document.body.classList.remove("light-mode");
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  // 🔍 Stock search
+  const handleInputChange = async (e) => {
+    const query = e.target.value.toUpperCase();
+    setStockQuery(query);
+    setSelectedSymbol(""); // reset selected stock
+
+    if (!query) {
+      setSuggestions([]);
+      return;
+    }
+
     try {
-      // Updated URL to match your backend route
-      const response = await fetch(`http://localhost:5000/api/stock/price/${symbol}`);
-      if (!response.ok) throw new Error("Stock not found");
-      const data = await response.json();
-      return parseFloat(data.price); // ensure it's a number
-    } catch (err) {
-      console.error(err);
-      return null;
+      const res = await fetch(`http://localhost:5000/search?q=${query}`);
+      const data = await res.json();
+      setSuggestions(Array.isArray(data) ? data.slice(0, 8) : []);
+    } catch {
+      setSuggestions([]);
     }
   };
 
+  // 🧮 CALCULATE (FIXED)
   const handleCalculate = async () => {
     setError("");
-    setPrice(null);
+    setResult(null);
 
-    // Validate inputs
-    if (!symbol || !amount || parseFloat(amount) <= 0) {
-      setError("Please enter a valid symbol and positive amount");
+    // ✅ allow both typed OR selected stock
+    const symbolToUse = selectedSymbol || stockQuery;
+
+    if (!amount || !symbolToUse) {
+      setError("Please enter amount and stock symbol.");
       return;
     }
 
-    const stockPrice = await fetchStockPrice(symbol.toUpperCase());
+    setLoading(true);
 
-    if (stockPrice === null || isNaN(stockPrice)) {
-      setError("Invalid stock symbol or price not found");
-      return;
+    try {
+      const res = await fetch(
+        `http://localhost:5000/price?symbol=${symbolToUse}`
+      );
+      const data = await res.json();
+
+      if (!data.price) throw new Error();
+
+      const shares = (amount / data.price).toFixed(2);
+
+      setResult({
+        symbol: data.symbol,
+        price: data.price.toFixed(2),
+        shares,
+      });
+    } catch {
+      setError("Invalid stock symbol or price not available.");
+    } finally {
+      setLoading(false);
     }
-
-    const totalValue = stockPrice * parseFloat(amount);
-    setPrice(totalValue.toFixed(2));
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "50px auto", textAlign: "center" }}>
-      <h2>Stock Calculator</h2>
+    <div className="calculator-page">
+      <button className="theme-toggle" onClick={toggleTheme}>
+        {theme === "dark" ? "🌙" : "☀️"}
+      </button>
 
-      <div style={{ marginBottom: "15px" }}>
-        <label>Company Symbol:</label>
-        <input
-          type="text"
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          placeholder="e.g. TCS"
-          style={{ width: "100%", padding: "8px", marginTop: "5px" }}
-        />
-      </div>
+      <div className="container">
+        <h1>InvestMate</h1>
 
-      <div style={{ marginBottom: "15px" }}>
-        <label>Amount:</label>
+        <label>Investment Amount (₹)</label>
         <input
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder="Number of shares"
-          min="1"
-          style={{ width: "100%", padding: "8px", marginTop: "5px" }}
+          placeholder="Enter amount"
         />
+
+        <label>Search Stock / ETF</label>
+        <div className="suggestions">
+          <input
+            type="text"
+            value={stockQuery}
+            onChange={handleInputChange}
+            placeholder="TCS, INFY, HDFCBANK"
+            autoComplete="off"
+          />
+
+          {suggestions.length > 0 && (
+            <div className="suggestion-box">
+              {suggestions.map((s) => (
+                <div
+                  key={s.symbol}
+                  className="suggestion-item"
+                  onClick={() => {
+                    setSelectedSymbol(s.symbol);
+                    setStockQuery(s.symbol);
+                    setSuggestions([]);
+                  }}
+                >
+                  <span className="symbol">{s.symbol}</span>
+                  <span className="name">{s.name}</span>
+                  <span className="exchange">{s.exchange}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button onClick={handleCalculate}>Calculate</button>
+
+        {loading && <div id="loader">⏳ Fetching data...</div>}
+        {error && <div className="error">{error}</div>}
+
+        {result && (
+          <div className="result">
+            <b>{result.symbol}</b>
+            <br />
+            Price: ₹{result.price}
+            <br />
+            Shares you can buy: {result.shares}
+          </div>
+        )}
       </div>
-
-      <button
-        onClick={handleCalculate}
-        style={{
-          padding: "10px 20px",
-          backgroundColor: "#4CAF50",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
-        }}
-      >
-        Calculate
-      </button>
-
-      {error && <p style={{ color: "red", marginTop: "15px" }}>{error}</p>}
-
-      {price !== null && (
-        <p style={{ marginTop: "15px", fontWeight: "bold" }}>
-          Total Value: ₹ {price}
-        </p>
-      )}
     </div>
   );
-};
+}
 
-export default StockCalculator;
+export default DynamicInvestmentCalculator;
