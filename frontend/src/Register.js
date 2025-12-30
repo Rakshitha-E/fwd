@@ -18,7 +18,7 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post("/api/auth/register", formData);
+      const res = await api.post("/api/register", formData);
       setMessage(res.data.message || "Registered successfully!");
       navigate("/login"); // redirect after registration
     } catch (err) {
