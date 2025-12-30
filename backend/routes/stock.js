@@ -3,6 +3,17 @@ import axios from "axios";
 
 const router = express.Router();
 
+// Function to get USD to INR exchange rate
+async function getExchangeRate() {
+  try {
+    const response = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
+    return response.data.rates.INR || 83; // Fallback to 83 if API fails
+  } catch (error) {
+    console.log('Exchange rate API failed, using fallback rate');
+    return 83; // Fallback rate
+  }
+}
+
 // Common stocks for search suggestions (Indian and International)
 const STOCKS = [
   // Indian Stocks
@@ -165,9 +176,16 @@ router.get("/price", async (req, res) => {
         const price = meta.regularMarketPrice;
 
         if (price && price > 0) {
+          // Convert to INR for international stocks
+          let finalPrice = price;
+          if (!isIndianStock) {
+            const exchangeRate = await getExchangeRate();
+            finalPrice = price * exchangeRate;
+          }
           return res.json({
             symbol: upperSymbol,
-            price: parseFloat(price.toFixed(2))
+            price: parseFloat(finalPrice.toFixed(2)),
+            currency: 'INR'
           });
         }
       }
@@ -190,9 +208,16 @@ router.get("/price", async (req, res) => {
       const result = response.data.quoteSummary.result;
       if (result && result[0] && result[0].price && result[0].price.regularMarketPrice) {
         const price = result[0].price.regularMarketPrice.raw;
+        // Convert to INR for international stocks
+        let finalPrice = price;
+        if (!isIndianStock) {
+          const exchangeRate = await getExchangeRate();
+          finalPrice = price * exchangeRate;
+        }
         return res.json({
           symbol: upperSymbol,
-          price: parseFloat(price.toFixed(2))
+          price: parseFloat(finalPrice.toFixed(2)),
+          currency: 'INR'
         });
       }
     } catch (quoteErr) {
@@ -224,7 +249,17 @@ router.get("/price", async (req, res) => {
 
     const mockPrice = mockPrices[upperSymbol];
     if (mockPrice) {
-      return res.json({ symbol: upperSymbol, price: mockPrice });
+      // Convert to INR for international stocks
+      let finalPrice = mockPrice;
+      if (!isIndianStock) {
+        const exchangeRate = await getExchangeRate();
+        finalPrice = mockPrice * exchangeRate;
+      }
+      return res.json({
+        symbol: upperSymbol,
+        price: parseFloat(finalPrice.toFixed(2)),
+        currency: 'INR'
+      });
     }
 
     res.status(404).json({ error: `Price not found for symbol: ${upperSymbol}` });

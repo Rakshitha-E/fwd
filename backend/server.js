@@ -5,7 +5,7 @@ import cors from "cors";
 
 import authRoutes from "./routes/authRoutes.js";
 import portfolioRoutes from "./routes/portfolio.js";
-import stockRoutes from "./routes/stock.js";
+import stockRoutes from "../backend/routes/stockRoutes.js";
 
 dotenv.config();
 
