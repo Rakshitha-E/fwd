@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Videos from "./pages/Videos";
 import Glossary from "./pages/Glossary";
 import DynamicInvestmentCalculator from "./pages/DynamicInvestmentCalculator";
+import LiveGraphsPage from "./pages/LiveGraphsPage";
 import PortfolioDashboard from "./pages/PortfolioDashboard";
 
 // ✅ Importing Navbar (make sure it's in /components/Navbar.js)
@@ -30,6 +31,7 @@ function App() {
         <Route path="/youtube" element={<Videos />} />
         <Route path="/glossary" element={<Glossary />} />
         <Route path="/stockcalculator" element={<DynamicInvestmentCalculator />} />
+        <Route path="/livegraphs" element={<LiveGraphsPage />} />
       </Routes>
     </Router>
   );

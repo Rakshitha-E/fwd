@@ -1,7 +1,7 @@
 import React from 'react';
 
 const PopularStocks = ({ onStockSelect }) => {
-  const indianStocks = ['TCS', 'INFY', 'HDFCBANK', 'RELIANCE', 'BAJFINANCE'];
+  const indianStocks = ['TCS', 'INFY', 'HDFCBANK', 'RELIANCE', 'BAJFINANCE', 'POCL', 'SILVER', 'ITC', 'WIPRO', 'KOTAKBANK'];
   const internationalStocks = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA'];
 
   return (

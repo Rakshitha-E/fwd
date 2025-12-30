@@ -73,10 +73,16 @@ function DynamicInvestmentCalculator() {
   // Fetch historical data for charts
   const fetchHistoricalData = async (symbol) => {
     try {
-      const res = await fetch(`http://localhost:5000/history?symbol=${symbol}`);
+      const res = await fetch(`http://localhost:5000/chart?symbol=${symbol}&period=1mo&interval=1d`);
       const data = await res.json();
       if (data.data) {
-        setHistoricalData(data.data);
+        // Transform data to match chart component expectations
+        const transformedData = data.data.map(item => ({
+          date: new Date(item.timestamp).toLocaleDateString(),
+          close: item.close,
+          timestamp: item.timestamp
+        }));
+        setHistoricalData(transformedData);
       }
     } catch (err) {
       console.error("Failed to fetch historical data:", err);
@@ -107,7 +113,7 @@ function DynamicInvestmentCalculator() {
 
       const shares = (amount / data.price).toFixed(4);
       const totalValue = (parseFloat(shares) * data.price).toFixed(2);
-      const currency = data.symbol.includes('.NS') ? '₹' : '$';
+      const currency = data.currency === 'INR' ? '₹' : '$';
 
       setResult({
         symbol: data.symbol,
@@ -121,9 +127,11 @@ function DynamicInvestmentCalculator() {
         symbol: data.symbol,
         price: parseFloat(data.price).toFixed(2),
         currency,
-        market: data.symbol.includes('.NS') ? 'NSE (India)' : 'US Markets'
+        market: data.symbol.includes('.NS') ? 'NSE (India)' : 'US Markets',
+        companyName: data.companyName || data.symbol
       });
 
+      // Fetch historical data for live graphs
       await fetchHistoricalData(symbolToUse);
 
     } catch (err) {
